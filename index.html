@@ -1,0 +1,1341 @@
+<!Doctype>
+    <style>
+        body {
+            background: #0b0e14
+        }
+        .gold {
+            color: #f5c542
+        }
+        .card {
+            background: #131722;
+            border-color: #2a2e39
+        }
+        .stat {
+            font-variant-numeric: tabular-nums
+        }
+
+        /* scrolling banner */
+        .ticker {
+            overflow: hidden;
+            white-space: nowrap;
+            background: #000;
+            border-bottom: 1px solid #2a2e39;
+            padding: 8px 0
+        }
+        .ticker-track {
+            display: inline-block;
+            animation: scroll 35s linear infinite
+        }
+        .ticker:hover .ticker-track {
+            animation-play-state: paused
+        }
+        .ticker-item {
+            display: inline-block;
+            margin: 0 28px;
+            font-weight: 600;
+            letter-spacing: .5px
+        }
+        @keyframes scroll {
+            from {
+                transform: translateX(0)
+            }
+
+            to {
+                transform: translateX(-50%)
+            }}
+
+        /* session cards */
+        .session {
+            border-width: 2px;
+            transition: border-color .3s, box-shadow .3s
+        }
+        .session.open {
+            border-color: #26e0a8;
+            box-shadow: 0 0 18px rgba(38,224,168,.25)
+        }
+        .city {
+            font-size: 1.15rem;
+            font-weight: 700
+        }
+        .clock {
+            font-size: 1.9rem;
+            font-weight: 700;
+            line-height: 1
+        }
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #6c757d;
+            margin-right: 6px
+        }
+        .open .dot {
+            background: #26e0a8;
+            animation: pulse 1.4s infinite
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(38,224,168,.6)
+            }
+
+            100% {
+                box-shadow: 0 0 0 10px rgba(38,224,168,0)
+            }}
+
+        /* 24h timeline */
+        .tl-row {
+            position: relative;
+            height: 30px;
+            background: #1a1f2c;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            overflow: hidden
+        }
+        .tl-bar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            border-radius: 6px;
+            opacity: .85;
+</style>
+        
+
+
+
+
+
+
+
+
+
+
+<html lang="eng">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XAU/USD Gold Chart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body {
+            background: #0b0e14
+        }
+        .card {
+            background: #131722;
+            border-color: #2a2e39
+        }
+        .chart-box {
+            width: 100%
+        }
+        .pane-label {
+            position: absolute;
+            top: 6px;
+            left: 10px;
+            z-index: 5;
+            font-size: .75rem;
+            color: #9aa4b2;
+            pointer-events: none
+        }
+        .stat {
+            font-variant-numeric: tabular-nums
+        }
+        .gold {
+            color: #f5c542
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar border-bottom border-secondary-subtle mb-3">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold gold">&#9733; XAU/USD <span class="text-body-secondary fw-normal fs-6">Gold Chart</span></span>
+            <span id="status" class="badge text-bg-secondary">Loading…</span>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <!-- Controls -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small mb-1">Timeframe</label>
+                        <select id="tf" class="form-select form-select-sm">
+                            <option value="1min" selected>1 min</option>
+                            <option value="15min">15 min</option>
+                            <option value="1h">1 hour</option>
+                            <option value="4h">4 hours</option>
+                            <option value="1day">Daily</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label small mb-1">Twelve Data API key (optional)</label>
+                        <input id="key" type="password" class="form-control form-control-sm" placeholder="Leave blank for demo data">
+                    </div>
+                    <div class="col-12 col-md-2 d-grid">
+                        <button id="load" class="btn btn-warning btn-sm">Load chart</button>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex flex-wrap gap-3 small">
+                            <div class="form-check">
+                                <input class="form-check-input tog" type="checkbox" id="t-ema" checked><label class="form-check-label" for="t-ema">EMA 20</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input tog" type="checkbox" id="t-bb" checked><label class="form-check-label" for="t-bb">BB</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input tog" type="checkbox" id="t-rsi" checked><label class="form-check-label" for="t-rsi">RSI</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input tog" type="checkbox" id="t-macd" checked><label class="form-check-label" for="t-macd">MACD</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input tog" type="checkbox" id="t-atr" checked><label class="form-check-label" for="t-atr">ATR</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live readout -->
+        <div class="row g-2 mb-3 text-center stat">
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        Close
+                    </div>
+                    <div id="v-close" class="fw-bold gold">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        EMA 20
+                    </div>
+                    <div id="v-ema" class="fw-bold">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        BB Upper / Lower
+                    </div>
+                    <div id="v-bb" class="fw-bold">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        RSI 14
+                    </div>
+                    <div id="v-rsi" class="fw-bold">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        MACD / Signal
+                    </div>
+                    <div id="v-macd" class="fw-bold">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-2">
+                <div class="card p-2">
+                    <div class="small text-body-secondary">
+                        ATR 14
+                    </div>
+                    <div id="v-atr" class="fw-bold">
+                        –
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="card mb-2 position-relative">
+            <span class="pane-label">XAU/USD · EMA 20 · Bollinger Bands (20, 2)</span><div id="c-price" class="chart-box"></div>
+        </div>
+        <div class="card mb-2 position-relative" id="p-rsi">
+            <span class="pane-label">RSI (14)</span><div id="c-rsi" class="chart-box"></div>
+        </div>
+        <div class="card mb-2 position-relative" id="p-macd">
+            <span class="pane-label">MACD (12, 26, 9)</span><div id="c-macd" class="chart-box"></div>
+        </div>
+        <div class="card mb-4 position-relative" id="p-atr">
+            <span class="pane-label">ATR (14)</span><div id="c-atr" class="chart-box"></div>
+        </div>
+        <p class="text-body-secondary small pb-4">
+            Educational tool only — not financial advice. Without an API key the chart uses simulated demo prices.
+        </p>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+
+        /* ---------- Indicator maths ---------- */
+        function ema(v, p) {
+            const k = 2 / (p + 1),
+            o = []; let e = null;
+            for (let i = 0; i < v.length; i++) {
+                if (i < p - 1) {
+                    o.push(null); continue;
+                }
+                e = e === null ? v.slice(0, p).reduce((a, b) => a + b) / p: v[i] * k + e * (1 - k);
+                o.push(e);
+            }
+            return o;
+        }
+        function bollinger(c, p = 20, m = 2) {
+            const up = [],
+            lo = [];
+            for (let i = 0; i < c.length; i++) {
+                if (i < p - 1) {
+                    up.push(null); lo.push(null); continue;
+                }
+                const s = c.slice(i - p + 1, i + 1),
+                mean = s.reduce((a, b) => a + b) / p;
+                const sd = Math.sqrt(s.reduce((a, b) => a + (b - mean) ** 2, 0) / p);
+                up.push(mean + m * sd); lo.push(mean - m * sd);
+            }
+            return {
+                up,
+                lo
+            };
+        }
+        function rsi(c, p = 14) {
+            const o = Array(c.length).fill(null); let g = 0,
+            l = 0;
+            for (let i = 1; i < c.length; i++) {
+                const d = c[i] - c[i - 1],
+                u = Math.max(d, 0),
+                dn = Math.max(-d, 0);
+                if (i <= p) {
+                    g += u; l += dn; if (i === p) {
+                        g /= p; l /= p; o[i] = 100 - 100 / (1 + g / (l || 1e-9));
+                    }
+                } else {
+                    g = (g * (p - 1) + u) / p; l = (l * (p - 1) + dn) / p; o[i] = 100 - 100 / (1 + g / (l || 1e-9));
+                }
+            }
+            return o;
+        }
+        function macd(c) {
+            const a = ema(c, 12),
+            b = ema(c, 26);
+            const m = c.map((_, i) => a[i] != null && b[i] != null ? a[i] - b[i]: null);
+            const s = m.findIndex(x => x != null),
+            sig = Array(c.length).fill(null);
+            if (s >= 0) ema(m.slice(s), 9).forEach((x, i) => sig[s + i] = x);
+            return {
+                m,
+                sig,
+                h: m.map((x, i) => x != null && sig[i] != null ? x - sig[i]: null)
+            };
+        }
+        function atr(d, p = 14) {
+            const o = Array(d.length).fill(null); let a = 0;
+            for (let i = 1; i < d.length; i++) {
+                const tr = Math.max(d[i].high - d[i].low, Math.abs(d[i].high - d[i - 1].close), Math.abs(d[i].low - d[i - 1].close));
+                if (i <= p) {
+                    a += tr; if (i === p) {
+                        a /= p; o[i] = a;
+                    }
+                } else {
+                    a = (a * (p - 1) + tr) / p; o[i] = a;
+                }
+            }
+            return o;
+        }
+
+        /* ---------- Data ---------- */
+        const SECS = {
+            '1min': 60,
+            '15min': 900,
+            '1h': 3600,
+            '4h': 14400,
+            '1day': 86400
+        };
+        function demoData(tf, n = 500) {
+            const step = SECS[tf]; let t = Math.floor(Date.now() / 1000 / step) * step - step * n;
+            let price = 3300,
+            out = [];
+            const vol = price * 0.0012 * Math.sqrt(step / 3600 + 0.5);
+            for (let i = 0; i < n; i++) {
+                const open = price,
+                drift = Math.sin(i / 40) * vol * 0.15;
+                const close = open + drift + (Math.random() - 0.5) * vol * 2;
+                const high = Math.max(open, close) + Math.random() * vol * 0.6;
+                const low = Math.min(open, close) - Math.random() * vol * 0.6;
+                out.push({
+                    time: t += step, open, high, low, close
+                }); price = close;
+            }
+            return out;
+        }
+        async function fetchData(tf, key) {
+            const url = `https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${tf}&outputsize=500&order=ASC&timezone=UTC&apikey=${encodeURIComponent(key)}`;
+            const r = await fetch(url),
+            j = await r.json();
+            if (j.status === 'error' || !j.values) throw new Error(j.message || 'No data returned');
+            return j.values.map(v => ({
+                time: Math.floor(new Date(v.datetime.replace(' ', 'T') + 'Z').getTime() / 1000),
+                open: +v.open, high: +v.high, low: +v.low, close: +v.close
+            }));
+        }
+
+        /* ---------- Charts ---------- */
+        const base = h => ({
+            autoSize: true, height: h,
+            handleScroll: false, handleScale: false,
+            layout: {
+                background: {
+                    color: '#131722'
+                }, textColor: '#9aa4b2'
+            },
+            grid: {
+                vertLines: {
+                    color: '#1e2230'
+                }, horzLines: {
+                    color: '#1e2230'
+                }
+            },
+            rightPriceScale: {
+                borderColor: '#2a2e39', minimumWidth: 70
+            },
+            timeScale: {
+                borderColor: '#2a2e39', timeVisible: true, secondsVisible: false, rightOffset: 4
+            },
+            crosshair: {
+                mode: 0
+            }
+        });
+        const mk = (id, h) => LightweightCharts.createChart($(id), {
+            ...base(h), height: h
+        });
+        const cPrice = mk('c-price', 540), cRsi = mk('c-rsi', 150), cMacd = mk('c-macd', 170), cAtr = mk('c-atr', 140);
+        const all = [cPrice, cRsi, cMacd, cAtr];
+
+        cPrice.priceScale('right').applyOptions({
+            scaleMargins: {
+                top: 0.06, bottom: 0.06
+            }
+        });
+        const sCandle = cPrice.addCandlestickSeries({
+            upColor: '#26e0a8', downColor: '#ff4d4f', borderVisible: true, borderUpColor: '#26e0a8', borderDownColor: '#ff4d4f', wickUpColor: '#26e0a8', wickDownColor: '#ff4d4f', priceLineWidth: 2
+        });
+        const sEma = cPrice.addLineSeries({
+            color: '#f5c542', lineWidth: 2, title: 'EMA20', priceLineVisible: false
+        });
+        const sBbU = cPrice.addLineSeries({
+            color: '#42a5f5', lineWidth: 1, title: 'BB Up', priceLineVisible: false, autoscaleInfoProvider: () => null
+        });
+        const sBbL = cPrice.addLineSeries({
+            color: '#ab47bc', lineWidth: 1, title: 'BB Low', priceLineVisible: false, autoscaleInfoProvider: () => null
+        });
+        const sRsi = cRsi.addLineSeries({
+            color: '#ce93d8', lineWidth: 2, priceLineVisible: false
+        });
+        sRsi.createPriceLine({
+            price: 70, color: '#ef5350', lineWidth: 1, lineStyle: 2, axisLabelVisible: true
+        });
+        sRsi.createPriceLine({
+            price: 30, color: '#26a69a', lineWidth: 1, lineStyle: 2, axisLabelVisible: true
+        });
+        const sHist = cMacd.addHistogramSeries({
+            priceLineVisible: false
+        });
+        const sMacd = cMacd.addLineSeries({
+            color: '#42a5f5', lineWidth: 2, priceLineVisible: false
+        });
+        const sSig = cMacd.addLineSeries({
+            color: '#ff9800', lineWidth: 2, priceLineVisible: false
+        });
+        const sAtr = cAtr.addLineSeries({
+            color: '#ffd54f', lineWidth: 2, priceLineVisible: false
+        });
+
+        const line = (d, arr) => d.map((x, i) => arr[i] == null ? null: {
+            time: x.time, value: arr[i]
+        }).filter(Boolean);
+
+        function render(d) {
+            const c = d.map(x => x.close);
+            const E = ema(c, 20),
+            B = bollinger(c),
+            R = rsi(c),
+            M = macd(c),
+            A = atr(d);
+            sCandle.setData(d);
+            sEma.setData(line(d, E)); sBbU.setData(line(d, B.up)); sBbL.setData(line(d, B.lo));
+            sRsi.setData(line(d, R)); sMacd.setData(line(d, M.m)); sSig.setData(line(d, M.sig));
+            sHist.setData(d.map((x, i) => M.h[i] == null ? null: {
+                time: x.time, value: M.h[i], color: M.h[i] >= 0 ? '#26a69a88': '#ef535088'
+            }).filter(Boolean));
+            sAtr.setData(line(d, A));
+            const n = d.length - 1,
+            f = (v, p = 2) => v == null ? '–': v.toFixed(p);
+            $('v-close').textContent = f(c[n]); $('v-ema').textContent = f(E[n]);
+            $('v-bb').textContent = `${f(B.up[n])} / ${f(B.lo[n])}`;
+            $('v-rsi').textContent = f(R[n], 1);
+            $('v-macd').textContent = `${f(M.m[n])} / ${f(M.sig[n])}`;
+            $('v-atr').textContent = f(A[n]);
+            all.forEach(ch => ch.timeScale().setVisibleLogicalRange({
+                from: Math.max(0, n - 45), to: n + 4
+            }));
+        }
+
+        /* ---------- UI ---------- */
+        function setStatus(txt, cls) {
+            const s = $('status'); s.textContent = txt; s.className = 'badge text-bg-' + cls;
+        }
+
+        let DATA = [], timer = null;
+        function tick() {
+            // simulated live tick (demo mode)
+            const step = SECS[$('tf').value],
+            last = DATA[DATA.length - 1],
+            now = Math.floor(Date.now() / 1000);
+            const vol = last.close * 0.0012 * Math.sqrt(step / 3600 + 0.5) * 0.12;
+            if (now >= last.time + step) {
+                const o = last.close; DATA.push({
+                    time: Math.floor(now / step) * step, open: o, high: o, low: o, close: o
+                });
+                if (DATA.length > 600) DATA.shift();
+            }
+            const b = DATA[DATA.length - 1];
+            b.close += (Math.random() - 0.5) * vol * 2; b.high = Math.max(b.high, b.close); b.low = Math.min(b.low, b.close);
+            render(DATA);
+        }
+        async function poll() {
+            // live refresh (API mode)
+            try {
+                DATA = await fetchData($('tf').value, $('key').value.trim()); render(DATA);
+            } catch (e) {}
+        }
+        async function load() {
+            clearInterval(timer);
+            const tf = $('tf').value,
+            key = $('key').value.trim();
+            setStatus('Loading…', 'secondary');
+            let data,
+            live = false;
+            if (key) {
+                try {
+                    data = await fetchData(tf, key); live = true; try {
+                        localStorage.setItem('xau_key', key);
+                    } catch (e) {}
+                }
+                catch (e) {
+                    setStatus('API error: ' + e.message + ' — showing demo', 'danger');
+                }
+            }
+            if (!data) {
+                data = demoData(tf); if (!key) setStatus('Demo data · live ticks', 'warning');
+            } else setStatus('● Live · XAU/USD ' + tf, 'success');
+            DATA = data; render(DATA);
+            timer = live ? setInterval(poll, 30000): setInterval(tick, 1000);
+        }
+
+        function applyToggles() {
+            const on = id => $(id).checked;
+            sEma.applyOptions({
+                visible: on('t-ema')
+            });
+            sBbU.applyOptions({
+                visible: on('t-bb')
+            }); sBbL.applyOptions({
+                visible: on('t-bb')
+            });
+            $('p-rsi').classList.toggle('d-none', !on('t-rsi'));
+            $('p-macd').classList.toggle('d-none', !on('t-macd'));
+            $('p-atr').classList.toggle('d-none', !on('t-atr'));
+        }
+
+        document.querySelectorAll('.tog').forEach(el => el.addEventListener('change', applyToggles));
+        $('load').addEventListener('click', load);
+        $('tf').addEventListener('change', load);
+        try {
+            const k = localStorage.getItem('xau_key'); if (k) $('key').value = k;
+        } catch (e) {}
+        load();
+    </script>
+</body>
+</html>
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XAU/USD Buy / Sell Buttons</title>
+    <link rel="stylesheet" href="trade-buttons.css">
+</head>
+<body>
+    <div class="trade-panel">
+        <div class="trade-header">
+            <span class="symbol">XAU/USD</span>
+            <span id="price" class="price">–</span>
+        </div>
+
+        <div class="trade-buttons">
+            <button id="btn-buy" class="btn buy">BUY</button>
+            <button id="btn-sell" class="btn sell">SELL</button>
+        </div>
+
+        <div class="trade-row">
+            <label for="qty">Lot size (oz)</label>
+            <input id="qty" type="number" min="1" value="1">
+            <button id="btn-close" class="btn close">Close</button>
+        </div>
+
+        <div class="trade-info">
+            <div>
+                Position: <b id="pos-txt">None</b>
+            </div>
+            <div>
+                Total P/L: <b id="pnl">$0.00</b>
+            </div>
+        </div>
+
+        <ul id="history" class="history"></ul>
+        <p class="note">
+            Paper trading only. No real orders are placed.
+        </p>
+    </div>
+
+    <script>
+        window.getLastPrice = () => DATA[DATA.length - 1].close;
+    </script>
+    <script src="trade-buttons.js"></script>
+</body>
+
+
+<footer class="site-footer">
+    <p>
+        Created by Lona Matshingana in the Republic of South Africa
+    </p>
+    <p>
+        Gold Fundamentals (Pty) Ltd
+    </p>
+    <p class="reg-number">
+        Reg. No. 2026/099393/07
+    </p>
+    <p>
+        Trusted by 100k+ users
+    </p>
+</footer>
+
+<style>
+    .site-footer {
+        text-align: center;
+        padding: 1.25rem 1rem;
+        background: #111;
+        color: #ddd;
+        font-family: system-ui, sans-serif;
+        font-size: 0.9rem;
+        border-top: 1px solid #333;
+    }
+    .site-footer p {
+        margin: 0.25rem 0;
+    }
+    .reg-number {
+        font-weight: 600;
+        letter-spacing: 0.03em;
+    }
+</style>
+</html>
+
+
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Purchase Popup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style1.css">
+</head>
+<body>
+    <main class="container py-5">
+        <h1 class="display-6 fw-bold"></h1>
+        <p class="lead text-secondary"></p>
+        <div class="d-flex gap-2 flex-wrap">
+            <button id="toggleBtn" class="btn btn-dark">Pause popups</button>
+            <button id="nowBtn" class="btn btn-outline-dark">Show one now</button>
+        </div>
+    </main>
+
+    <div id="popupHost" class="popup-host" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app1.js"></script>
+</body>
+</html>
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Customer Reviews | Gold Fundamentals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Serif+4:ital,wght@0,400;0,600&display=swap" rel="stylesheet">
+    <style>
+:root {
+        --ink: #10302a;
+        --gold: #b8892b;
+        --gold-soft: #f1e3bf;
+        --paper: #f4f5f1;
+        --card: #fff;
+        --line: #d9dcd2;
+        --muted: #59665f;
+        --text: #10302a;
+        --hero: #10302a;
+        --off: #d6d3c6;
+        --track: #e8eae3;
+        --tagtxt: #6b4d0f;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top,0px);
+        padding-bottom: env(safe-area-inset-bottom,0px)
+    }
+        @media (prefers-color-scheme:dark) {
+:root:not([data-theme="light"]) {
+            --paper: #0e1a17;
+            --card: #17261f;
+            --line: #2b3d35;
+            --muted: #9fb0a7;
+            --text: #e8eee9;
+            --hero: #0a1411;
+            --off: #3a4a42;
+            --track: #2b3d35;
+            --gold-soft: #3b2f12;
+            --tagtxt: #f1e3bf
+        }}
+:root[data-theme="dark"] {
+            --paper: #0e1a17;
+            --card: #17261f;
+            --line: #2b3d35;
+            --muted: #9fb0a7;
+            --text: #e8eee9;
+            --hero: #0a1411;
+            --off: #3a4a42;
+            --track: #2b3d35;
+            --gold-soft: #3b2f12;
+            --tagtxt: #f1e3bf
+        }
+        *,*::before,*::after {
+            box-sizing: border-box
+        }
+        html {
+            scroll-padding-top: env(safe-area-inset-top,0px)
+        }
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--text);
+            font-family: 'Source Serif 4',Georgia,serif;
+            font-size: 1.05rem;
+            line-height: 1.65
+        }
+        h1,h2,h3,button,label,.df,.meta,.badge {
+            font-family: 'Bricolage Grotesque',system-ui,sans-serif
+        }
+        h1,h2,h3,p {
+            margin: 0
+        }
+        .wrap {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 1rem
+        }
+        .hero {
+            background: var(--hero);
+            color: #fff;
+            padding: 3.5rem 0 3rem;
+            border-bottom: 6px solid var(--gold)
+        }
+        .hero h1 {
+            font-weight: 800;
+            font-size: clamp(2rem,5vw,3.2rem);
+            line-height: 1.1;
+            max-width: 15ch;
+            margin: .4rem 0 .8rem
+        }
+        .hero p.lead {
+            color: #cfdcd6;
+            max-width: 46ch;
+            margin-bottom: 1rem
+        }
+        .g {
+            display: grid;
+            gap: 1.5rem;
+            align-items: start
+        }
+        .g2 {
+            grid-template-columns: 1.3fr 1fr
+        }
+        @media(max-width:900px) {
+            .g2 {
+                grid-template-columns: 1fr
+            }}
+        .brand {
+            color: var(--gold);
+            font-weight: 700
+        }
+        .score {
+            background: var(--card);
+            color: var(--text);
+            border-radius: .5rem;
+            padding: 1.4rem
+        }
+        .top {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem
+        }
+        .avg {
+            font-family: 'Bricolage Grotesque',sans-serif;
+            font-weight: 800;
+            font-size: 3.4rem;
+            line-height: 1
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: .9rem;
+            font-family: 'Bricolage Grotesque',sans-serif;
+            margin-bottom: .25rem
+        }
+        .track {
+            flex: 1;
+            height: 8px;
+            background: var(--track);
+            border-radius: 4px;
+            overflow: hidden
+        }
+        .fill {
+            height: 100%;
+            background: var(--gold)
+        }
+        .stars {
+            color: var(--gold);
+            letter-spacing: .1em;
+            white-space: nowrap
+        }
+        .stars .off {
+            color: var(--off)
+        }
+        .btn {
+            display: inline-block;
+            border: 1px solid var(--gold);
+            background: var(--gold);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: .6rem 1.2rem;
+            border-radius: .4rem;
+            cursor: pointer;
+            text-decoration: none
+        }
+        .btn:hover {
+            background: #9a7120;
+            border-color: #9a7120
+        }
+        .btn.w {
+            width: 100%;
+            font-size: 1.1rem;
+            padding: .75rem
+        }
+        .btn.del {
+            background: none;
+            color: #c0392b;
+            border-color: #c0392b;
+            font-size: .8rem;
+            padding: .2rem .6rem;
+            margin-left: auto
+        }
+:focus-visible {
+            outline: 3px solid var(--gold);
+            outline-offset: 2px
+        }
+        main {
+            padding: 2.5rem 0
+        }
+        .bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: .6rem;
+            margin-bottom: 1rem
+        }
+        .bar h2 {
+            font-size: 1.4rem;
+            font-weight: 700
+        }
+        select,input[type=text],textarea {
+            font: inherit;
+            font-size: .95rem;
+            padding: .45rem .6rem;
+            border: 1px solid var(--line);
+            border-radius: .35rem;
+            background: var(--card);
+            color: var(--text);
+            width: 100%
+        }
+        .bar select {
+            width: auto;
+            font-size: .85rem
+        }
+        .review {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-left: 5px solid var(--gold);
+            border-radius: .4rem;
+            padding: 1.2rem 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: .9rem
+        }
+        .review h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: .3rem 0
+        }
+        .review blockquote {
+            margin: .3rem 0 .8rem
+        }
+        .rb {
+            flex: 1;
+            min-width: 0
+        }
+        .rt {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: .5rem
+        }
+        .meta {
+            font-size: .88rem;
+            color: var(--muted)
+        }
+        .mrow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem
+        }
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1d4a41;
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            flex: none
+        }
+        .badge {
+            background: var(--gold-soft);
+            color: var(--tagtxt);
+            font-weight: 600;
+            font-size: .78rem;
+            padding: .2rem .55rem;
+            border-radius: .3rem
+        }
+        .badge.o {
+            background: none;
+            border: 1px solid var(--line);
+            color: var(--muted)
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: .5rem;
+            padding: 1.5rem
+        }
+        .panel h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem
+        }
+        .sticky {
+            position: sticky;
+            top: 1rem
+        }
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .8rem
+        }
+        @media(max-width:480px) {
+            .row2 {
+                grid-template-columns: 1fr
+            }}
+        .f {
+            margin-bottom: 1rem
+        }
+        .f label,.f .lb {
+            display: block;
+            font-weight: 600;
+            margin-bottom: .25rem;
+            font-size: .95rem
+        }
+        .f small {
+            font-weight: 400;
+            color: var(--muted)
+        }
+        .fb {
+            display: none;
+            color: #c0392b;
+            font-size: .85rem;
+            margin-top: .2rem
+        }
+        .was-validated :invalid~.fb {
+            display: block
+        }
+        .was-validated :invalid {
+            border-color: #c0392b
+        }
+        .pick {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: .15rem
+        }
+        .pick input {
+            position: absolute;
+            opacity: 0
+        }
+        .pick label {
+            font-size: 2rem;
+            color: var(--off);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 .1rem;
+            margin: 0;
+            border-radius: .25rem
+        }
+        .pick input:checked~label,.pick label:hover,.pick label:hover~label {
+            color: var(--gold)
+        }
+        .pick input:focus-visible+label {
+            outline: 3px solid var(--gold)
+        }
+        .note {
+            font-size: .85rem;
+            color: var(--muted);
+            margin-top: 1rem
+        }
+        .empty {
+            text-align: center
+        }
+
+        .empty p {
+            margin-bottom: .8rem
+        }
+        footer {
+            text-align: center;
+            padding: 1.5rem 0
+        }
+        #toast {
+            position: fixed;
+            right: 1rem;
+            bottom: calc(1rem + env(safe-area-inset-bottom,0px));
+            background: #1f7a4d;
+            color: #fff;
+            padding: .7rem 1rem;
+            border-radius: .4rem;
+            font-family: 'Bricolage Grotesque',sans-serif;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: .25s;
+            pointer-events: none
+        }
+        #toast.on {
+            opacity: 1;
+            transform: none
+        }
+        @media(prefers-reduced-motion:reduce) {
+            #toast {
+                transition: none
+            }}
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <div class="wrap">
+            <div class="g g2" style="align-items:center">
+                <div>
+                    <p class="brand">
+                        Gold Fundamentals (Pty) Ltd
+                    </p>
+                    <h1>What traders say after they buy</h1>
+                    <p class="lead">
+                        Real reviews of our XAU/USD trading simulator. Bought something from us? Tell the next trader what it was like.
+                    </p>
+                    <a href="#write" class="btn">Write a review</a>
+                </div>
+                <div class="score" aria-live="polite">
+                    <div class="top">
+                        <div class="avg" id="avg">
+                            0.0
+                        </div>
+                        <div>
+                            <div class="stars" id="avgStars" style="font-size:1.25rem"></div>
+                            <div class="meta" id="count">
+                                0 reviews
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dist"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="wrap"><div class="g g2">
+        <section aria-labelledby="lh">
+            <div class="bar">
+                <h2 id="lh">Customer reviews</h2>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+
+                    <select id="fRating" aria-label="Filter by rating"><option value="0">All ratings</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select>
+                    <select id="fSort" aria-label="Sort reviews"><option value="new">Newest</option><option value="high">Highest rated</option><option value="low">Lowest rated</option></select>
+                </div>
+            </div>
+            <div id="list"></div>
+            <p class="note">
+                Trading involves risk. Reviews describe individual experiences with our products and are not a promise of trading results.
+            </p>
+        </section>
+
+        <aside id="write">
+            <div class="panel sticky">
+                <h2>Write a review</h2>
+                <form id="form" novalidate>
+                    <div class="row2 f">
+                        <div>
+                            <label for="fname">First name</label><input type="text" id="fname" maxlength="30" required autocomplete="given-name"><div class="fb">
+                                Enter your first name.
+                            </div>
+                        </div>
+                        <div>
+                            <label for="lname">Surname</label><input type="text" id="lname" maxlength="30" required autocomplete="family-name"><div class="fb">
+                                Enter your surname.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="f">
+                        <span class="lb" id="rl">Your rating</span>
+                        <div class="pick" role="radiogroup" aria-labelledby="rl">
+                            <input type="radio" name="rating" id="r5" value="5"><label for="r5" title="5 stars">★</label>
+                            <input type="radio" name="rating" id="r4" value="4"><label for="r4" title="4 stars">★</label>
+                            <input type="radio" name="rating" id="r3" value="3"><label for="r3" title="3 stars">★</label>
+                            <input type="radio" name="rating" id="r2" value="2"><label for="r2" title="2 stars">★</label>
+                            <input type="radio" name="rating" id="r1" value="1"><label for="r1" title="1 star">★</label>
+                        </div>
+                        <div class="fb" id="rateErr">
+                            Pick a star rating.
+                        </div>
+                    </div>
+                    <div class="f">
+                        <label for="title">Review title</label><input type="text" id="title" maxlength="70" required><div class="fb">
+                            Add a short title.
+                        </div>
+                    </div>
+                    <div class="f">
+                        <label for="text">Your review</label><textarea id="text" rows="4" minlength="20" maxlength="600" required></textarea><div class="fb">
+                          Write at least 20 characters.
+                        </div>
+                    </div>
+                    <div class="f">
+                        <label for="order">Order number <small>(optional)</small></label><input type="text" id="order" maxlength="30">
+                    </div>
+                    <button class="btn w" type="submit">Post review</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+    </main>
+
+    <footer class="meta">
+        &copy; <span id="yr"></span> Gold Fundamentals (Pty) Ltd
+        <p class="reg-number">
+            2026/099393/07
+        </p>
+
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        (function() {
+            var KEY = 'gf_testimonials_v4', MINE = 'gf_testimonials_mine';
+            var seed = [{
+                id: 's1', name: 'Thabo Mokoena', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Practised for weeks before risking real money', text: 'The simulator let me test entries on gold without any pressure. I stopped chasing trades once I saw my own results on screen.', order: 'GF-1042', date: '2026-09-18'
+            },
+                {
+                    id: 's2', name: 'Naledi Khumalo', product: 'XAU/USD Trading Simulator', rating: 4, title: 'Clear and to the point', text: 'The simulator shows gold price moves in plain, uncluttered charts. I would have liked more indicators to choose from, but it is a solid start.', order: '', date: '2026-09-02'
+                },
+                {
+                    id: 's3', name: 'Pieter van der Merwe', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Worth it for the risk practice', text: 'Setting stop losses and position size felt real. I made my mistakes here instead of in a live account.', order: 'GF-0987', date: '2026-08-21'
+                },
+                {
+                    id: 's4', name: 'Ayesha Dlamini', product: 'XAU/USD Trading Simulator', rating: 3, title: 'Good basics, not advanced', text: 'Great for beginners. If you already trade, you will find most of the features familiar.', order: '', date: '2026-08-05'
+                },
+                {
+                    id: 's5', name: 'Sipho Nkosi', product: 'XAU/USD Trading Simulator', rating: 4, title: 'Easy to use from day one', text: 'I opened it and started practising straight away. A way to save and compare sessions would make it even better.', order: 'GF-1103', date: '2026-09-27'
+                },
+                {
+                    id: 's6', name: 'Lerato Mahlangu', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Finally understood gold pricing', text: 'Replaying real gold sessions showed me what moves XAU/USD around news. I keep going back to the risk practice mode.', order: 'GF-1076', date: '2026-09-24'
+                },
+                {
+                    id: 'n1', name: 'Kagiso Molefe', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Built my confidence step by step', text: 'I ran the same London session setup a dozen times until my rules were automatic. Now I follow them in live trading too.', order: 'GF-1118', date: '2026-10-03'
+                },
+                {
+                    id: 'n2', name: 'Zanele Ndlovu', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Perfect first step into gold', text: 'Simple layout, no jargon dumping. Practising through news events and gold volatility was worth the price alone.', order: 'GF-1121', date: '2026-10-05'
+                },
+                {
+                    id: 'n3', name: 'Johan Botha', product: 'XAU/USD Trading Simulator', rating: 4, title: 'Realistic price action', text: 'Spreads and slippage feel close to the real thing. I would love a dark mode and more historical sessions to choose from.', order: 'GF-1095', date: '2026-09-30'
+                },
+                {
+                    id: 'n4', name: 'Fatima Patel', product: 'XAU/USD Trading Simulator', rating: 4, title: 'Good risk management tools', text: 'The position sizing calculator was easy to follow. An exportable session summary would be a great addition.', order: '', date: '2026-09-14'
+                },
+                {
+                    id: 'n5', name: 'Bongani Zulu', product: 'XAU/USD Trading Simulator', rating: 3, title: 'Useful, but a learning curve', text: 'It took me a couple of evenings to get comfortable with the controls. Once I did, it became part of my weekly practice.', order: 'GF-1064', date: '2026-09-09'
+                },
+                {
+                    id: 'n6', name: 'Refilwe Sithole', product: 'XAU/USD Trading Simulator', rating: 5, title: 'Bought it for my brother, now I use it too', text: 'I wanted to understand what he was doing. Practising support and resistance on gold made sense even to me.', order: 'GF-1109', date: '2026-10-07'
+                }];
+            var $ = function(id) {
+                return document.getElementById(id)};
+            function load(k, d) {
+                try {
+                    var v = localStorage.getItem(k); return v?JSON.parse(v): d
+                }catch(e) {
+                    return d
+                }}
+            function save(k, v) {
+                try {
+                    localStorage.setItem(k, JSON.stringify(v))}catch(e) {}}
+            var reviews = load(KEY, null); if (!reviews) {
+                reviews = seed.slice(); save(KEY, reviews)}
+            var mine = load(MINE, []);
+            function esc(s) {
+                var d = document.createElement('div'); d.textContent = s; return d.innerHTML
+            }
+            function stars(n) {
+                var o = ''; for (var i = 1; i <= 5; i++)o += i <= n?'★': '<span class="off">★</span>'; return '<span class="stars" role="img" aria-label="'+n+' out of 5 stars">'+o+'</span>'
+            }
+            function fmt(d) {
+                return new Date(d+'T00:00:00').toLocaleDateString('en-ZA', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                })}
+            function summary() {
+                var n = reviews.length,
+                sum = 0,
+                c = [0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0];
+                reviews.forEach(function(r) {
+                    sum += r.rating; c[r.rating]++
+                });
+                var avg = n?sum/n: 0;
+                $('avg').textContent = avg.toFixed(1);
+                $('avgStars').innerHTML = stars(Math.round(avg));
+                $('count').textContent = n+(n === 1?' review': ' reviews');
+                var h = '';
+                for (var s = 5; s >= 1; s--) {
+                    var p = n?Math.round(c[s]/n*100): 0;
+                    h += '<div class="bar-row"><span>'+s+'★</span><div class="track"><div class="fill" style="width:'+p+'%"></div></div><span style="width:2.4rem;text-align:right">'+p+'%</span></div>'
+                }
+                $('dist').innerHTML = h;
+            }
+            function render() {
+                var r=+$('fRating').value,
+                s = $('fSort').value;
+                var list = reviews.filter(function(x) {
+                    return !r || x.rating === r
+                });
+                list.sort(function(a, b) {
+                    if (s === 'high')return b.rating-a.rating || b.date.localeCompare(a.date);
+                    if (s === 'low')return a.rating-b.rating || b.date.localeCompare(a.date);
+                    return b.date.localeCompare(a.date)});
+                if (!list.length) {
+                    $('list').innerHTML = '<div class="panel empty"><p>No reviews match these filters.</p><a href="#write" class="btn">Write the first one</a></div>'; return
+                }
+                $('list').innerHTML = list.map(function(x) {
+                    var own = mine.indexOf(x.id)>-1;
+                    return '<article class="review"><div class="avatar" aria-hidden="true">'+esc(x.name.charAt(0).toUpperCase())+'</div><div class="rb">'
+                    +'<div class="rt">'+stars(x.rating)+'<span class="meta">'+fmt(x.date)+'</span></div>'
+                    +'<h3>'+esc(x.title)+'</h3><blockquote>'+esc(x.text)+'</blockquote>'
+                    +'<div class="mrow meta"><strong>'+esc(x.name)+'</strong><span class="badge">'+esc(x.product)+'</span>'
+                    +(x.order?'<span class="badge o">Order '+esc(x.order)+'</span>': '')
+                    +(own?'<button class="btn del" data-del="'+x.id+'">Delete</button>': '')
+                    +'</div></div></article>'
+                }).join('');
+            }
+            var tt; function toast(m) {
+                var t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(function() {
+                    t.classList.remove('on')}, 3000)}
+            $('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var f = e.target, rating = f.querySelector('input[name=rating]:checked');
+                $('rateErr').style.display = rating?'none': 'block';
+                f.classList.add('was-validated');
+                if (!f.checkValidity()||!rating)return;
+                var rv = {
+                    id: 'u'+Date.now(),
+                    name: $('fname').value.trim()+' '+$('lname').value.trim(),
+                    product: 'XAU/USD Trading Simulator',
+                    rating: +rating.value,
+                    title: $('title').value.trim(),
+                    text: $('text').value.trim(),
+                    order: $('order').value.trim(),
+                    date: new Date().toISOString().slice(0, 10)};
+                reviews.unshift(rv); mine.push(rv.id); save(KEY, reviews); save(MINE, mine);
+                f.reset(); f.classList.remove('was-validated');
+                summary(); render(); toast('Review posted. Thank you!');
+            });
+            $('list').addEventListener('click',
+                function(e) {
+                    var id = e.target.getAttribute('data-del');
+                    if (!id||!confirm('Delete your review?'))return;
+                    reviews = reviews.filter(function(x) {
+                        return x.id !== id
+                    });
+                    mine = mine.filter(function(x) {
+                        return x !== id
+                    });
+                    save(KEY, reviews); save(MINE, mine); summary(); render(); toast('Review deleted.');
+                });
+            ['fRating', 'fSort'].forEach(function(id) {
+                $(id).addEventListener('change', render)});
+            $('yr').textContent = new Date().getFullYear();
+            summary(); render();
+        })();
+    </script>
+</body>
+</html>

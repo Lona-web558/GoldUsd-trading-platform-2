@@ -1,0 +1,140 @@
+:root {
+    --bg: #0b0e14;
+    --card: #131722;
+    --line: #2a2e39;
+    --text: #e6e9ef;
+    --muted: #9aa4b2;
+    --buy: #26e0a8;
+    --sell: #ff4d4f;
+    --gold: #f5c542;
+}
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.trade-panel {
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+}
+.trade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+}
+.symbol {
+    font-weight: 700;
+    color: var(--gold);
+}
+.price {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.trade-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.btn {
+    border: 0;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .08s, filter .15s;
+}
+.btn:active {
+    transform: scale(.97);
+}
+.btn:hover {
+    filter: brightness(1.1);
+}
+.btn.buy {
+    background: var(--buy);
+    color: #04251c;
+}
+.btn.sell {
+    background: var(--sell);
+    color: #fff;
+}
+.btn.close {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    font-size: .9rem;
+}
+
+.trade-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+    color: var(--muted);
+    font-size: .9rem;
+}
+.trade-row input {
+    width: 80px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text);
+}
+.trade-row .close {
+    margin-left: auto;
+}
+
+.trade-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: .9rem;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+}
+.trade-info b {
+    color: var(--text);
+}
+.profit {
+    color: var(--buy) !important;
+}
+.loss {
+    color: var(--sell) !important;
+}
+
+.history {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    max-height: 160px;
+    overflow: auto;
+    font-size: .8rem;
+}
+.history li {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+}
+.note {
+    margin: 12px 0 0;
+    font-size: .72rem;
+    color: var(--muted);
+    text-align: center;
+}
